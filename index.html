@@ -11,51 +11,77 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .mini-loader { border: 2px solid #f3f3f3; border-top: 2px solid #4f46e5; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse-red { 0%, 100% { background-color: #991b1b; } 50% { background-color: #ef4444; } }
         .hidden { display: none; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
-        .comparison-chart-container { position: relative; height: 200px; width: 100%; }
+        .chart-container { position: relative; height: 320px; width: 100%; }
+        .discovery-chart-container { position: relative; height: 180px; width: 100%; }
         .tracking-chart-container { position: relative; height: 400px; width: 100%; }
         .mode-btn { transition: all 0.2s ease-in-out; }
         .mode-btn-active { background-color: #4f46e5; color: white; }
         .mode-btn-inactive { background-color: #374151; color: #9ca3af; }
+        button:disabled { cursor: not-allowed; background-color: #4b5563 !important; }
+        .topic-tag { display: inline-block; background-color: #374151; padding: 4px 12px; border-radius: 9999px; font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: background-color 0.2s; }
+        .topic-tag:hover { background-color: #4f46e5; }
+        .tooltip { position: relative; display: inline-block; cursor: help; }
+        .tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #111827; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 0.8rem; font-weight: normal; border: 1px solid #374151; }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        .anomaly-pulse { animation: pulse-red 2s infinite; }
+        
+        @media print {
+            body { background-color: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-container { padding: 0 !important; }
+            .print-card { background-color: #f9fafb !important; border: 1px solid #e5e7eb !important; box-shadow: none !important; }
+            .print-text-header { color: black !important; }
+            .print-text-body { color: #374151 !important; }
+            .print-text-faded { color: #6b7280 !important; }
+            .print-bg { background-color: #f3f4f6 !important; }
+            .print-grid { display: block !important; }
+            .print-grid > div { width: 100%; margin-bottom: 2rem; }
+            .print-post { border-color: #e5e7eb !important; }
+            #resultsArea { margin-top: -4rem; }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200">
 
-    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 print-container">
         
-        <header class="text-center mb-10">
+        <header class="text-center mb-10 no-print">
             <h1 class="text-4xl sm:text-5xl font-bold text-white">Reddit Intelligence Platform</h1>
-            <p class="text-indigo-400 mt-2 text-lg">Track trends. Synthesize insights. Dominate the narrative.</p>
+            <p class="text-indigo-400 mt-2 text-lg">From reactive analysis to proactive intelligence.</p>
         </header>
 
-        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl mb-8 border border-gray-700">
+        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl mb-8 border border-gray-700 no-print">
             <!-- Mode Toggle -->
-            <div class="flex justify-center items-center gap-2 mb-6 bg-gray-900 p-1 rounded-lg">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 bg-gray-900 p-1 rounded-lg">
                 <button id="singleModeBtn" class="mode-btn w-full py-2 px-4 rounded-md font-semibold">Single</button>
                 <button id="compareModeBtn" class="mode-btn w-full py-2 px-4 rounded-md font-semibold">Compare</button>
-                <button id="trackModeBtn" class="mode-btn w-full py-2 px-4 rounded-md font-semibold">Track</button>
+                <button id="monitoringModeBtn" class="mode-btn w-full py-2 px-4 rounded-md font-semibold">Monitoring</button>
+                <button id="discoverModeBtn" class="mode-btn w-full py-2 px-4 rounded-md font-semibold">Discover</button>
             </div>
             
             <!-- Input sections -->
-            <div id="singleInputContainer" class="hidden"><div class="flex flex-col sm:flex-row gap-4"><div class="flex-grow flex items-center bg-gray-900 rounded-lg px-3 border border-gray-600"><span class="text-gray-500 font-semibold text-lg">r/</span><input type="text" id="subredditInput" class="w-full p-3 bg-gray-900 focus:outline-none rounded-r-lg text-white" placeholder="e.g., wallstreetbets"></div><button id="analyzeBtn" class="w-full sm:w-auto bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700">Analyze</button></div></div>
-            <div id="compareInputContainer" class="hidden"><div class="flex flex-col sm:flex-row gap-4"><div class="flex-grow"><input type="text" id="compareInput" class="w-full p-3 bg-gray-900 focus:outline-none rounded-lg text-white border border-gray-600" placeholder="e.g., politics, conservative, liberal"></div><button id="compareBtn" class="w-full sm:w-auto bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-purple-700">Compare</button></div><p class="text-center text-sm text-gray-400 mt-3">Enter 2-4 subreddit names, separated by commas.</p></div>
-            <div id="trackInputContainer" class="hidden"><h3 class="text-xl font-semibold text-center text-white mb-4">Create a New Keyword Tracker</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" id="trackKeywordInput" class="w-full p-3 bg-gray-900 rounded-lg text-white border border-gray-600" placeholder="Keyword/Entity to Track (e.g., Tesla)"><input type="text" id="trackSubredditsInput" class="w-full p-3 bg-gray-900 rounded-lg text-white border border-gray-600" placeholder="Subreddits (comma-separated)"></div><button id="createTrackerBtn" class="w-full mt-4 bg-teal-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-teal-700">Create Tracker</button></div>
+            <div id="singleInputContainer" class="hidden"><div class="flex flex-col sm:flex-row gap-4"><div class="flex-grow flex items-center bg-gray-900 rounded-lg px-3 border border-gray-600 focus-within:border-indigo-500 transition-colors"><span class="text-gray-500 font-semibold text-lg">r/</span><input type="text" id="subredditInput" class="w-full p-3 bg-gray-900 focus:outline-none rounded-r-lg text-white" placeholder="e.g., technology"></div><button id="analyzeBtn" class="w-full sm:w-auto bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700">Analyze</button></div></div>
+            <div id="compareInputContainer" class="hidden"><div class="flex flex-col sm:flex-row gap-4"><div class="flex-grow"><input type="text" id="compareInput" class="w-full p-3 bg-gray-900 focus:outline-none rounded-lg text-white border border-gray-600" placeholder="e.g., politics, conservative"></div><button id="compareBtn" class="w-full sm:w-auto bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-purple-700">Compare</button></div><p class="text-center text-sm text-gray-400 mt-3">Enter 2-4 subreddit names, separated by commas.</p></div>
+            <div id="monitoringInputContainer" class="hidden"><h3 class="text-xl font-semibold text-center text-white mb-4">Create a New Keyword Tracker</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" id="trackKeywordInput" class="w-full p-3 bg-gray-900 rounded-lg text-white border border-gray-600" placeholder="Keyword/Entity to Track"><input type="text" id="trackSubredditsInput" class="w-full p-3 bg-gray-900 rounded-lg text-white border border-gray-600" placeholder="Subreddits (comma-separated)"></div><button id="createTrackerBtn" class="w-full mt-4 bg-teal-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-teal-700">Create Tracker</button></div>
+            <div id="discoverInputContainer" class="hidden"><div class="flex flex-col sm:flex-row gap-4"><div class="flex-grow"><input type="text" id="discoverInput" class="w-full p-3 bg-gray-900 focus:outline-none rounded-lg text-white border border-gray-600" placeholder="Enter topic to discover (e.g., AI safety)"></div><button id="discoverBtn" class="w-full sm:w-auto bg-pink-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-pink-700">Discover</button></div></div>
         </div>
 
-        <div id="loader" class="hidden flex-col items-center justify-center my-16"><div class="loader"></div><p id="loaderText" class="mt-4 text-gray-400"></p></div>
+        <div id="loader" class="hidden flex-col items-center justify-center my-16" role="status"><div class="loader"></div><p id="loaderText" class="mt-4 text-gray-400"></p></div>
         <div id="error" class="hidden bg-red-900 border border-red-700 text-red-300 p-4 rounded-lg my-8" role="alert"><p class="font-bold">Analysis Failed</p><p id="errorMessage"></p></div>
 
         <!-- Main Content Area -->
         <div id="resultsArea"></div>
         
-        <!-- Comment Analysis Modal -->
-        <div id="commentModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <!-- Universal Modal -->
+        <div id="universalModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 no-print" role="dialog" aria-modal="true">
             <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-                <div class="p-6 border-b border-gray-700 flex justify-between items-center"><h2 class="text-2xl font-bold text-white">Comment Thread Deep Dive</h2><button id="closeModalBtn" class="text-gray-400 hover:text-white text-3xl">&times;</button></div>
+                <div class="p-6 border-b border-gray-700 flex justify-between items-center"><h2 id="modalTitle" class="text-2xl font-bold text-white"></h2><button id="closeModalBtn" class="text-gray-400 hover:text-white text-3xl" aria-label="Close modal">&times;</button></div>
                 <div id="modalContent" class="p-6 overflow-y-auto"></div>
-                <div id="modalLoader" class="hidden flex-col items-center justify-center p-12"><div class="loader"></div><p class="mt-4 text-gray-400">Analyzing comments...</p></div>
+                <div id="modalLoader" class="hidden flex-col items-center justify-center p-12"><div class="loader"></div><p id="modalLoaderText" class="mt-4 text-gray-400">Analyzing comments...</p></div>
             </div>
         </div>
 
@@ -65,409 +91,201 @@
     // --- State & Config ---
     let activeMode = 'single';
     let chartInstances = {};
-    const ENTITY_REGEX = { STOCK: /\b([A-Z]{1,5})\b/g, TICKER: /\$([A-Za-z]{1,5})\b/g };
-    const KNOWN_COMPANIES = ['Tesla', 'Apple', 'Google', 'Amazon', 'Microsoft', 'Nvidia', 'AMD', 'Intel', 'Facebook', 'Meta'];
+    let isAnalyzing = false;
+    let currentAnalysisResult = null; // Store the latest single analysis result
+    const EMOTION_LEXICON = { joy: new Set(['love', 'awesome', 'great', 'amazing', 'good', 'excellent', 'fantastic', 'happy', 'excited', 'success', 'bullish', 'moon', 'rocket']), anger: new Set(['hate', 'bad', 'terrible', 'awful', 'angry', 'frustrated', 'annoyed', 'scam', 'garbage', 'stupid', 'fud']), sadness: new Set(['sad', 'disappointed', 'unhappy', 'depressed', 'crying', 'lost', 'bearish', 'pain', 'issue', 'problem']), fear: new Set(['fear', 'anxious', 'scared', 'nervous', 'worry', 'risk', 'concern', 'panic', 'short', 'sell']) };
+    const STOP_WORDS = new Set(['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now']);
+    const DISCOVERY_SUBREDDITS = ['news', 'worldnews', 'politics', 'technology', 'science', 'futurology', 'gaming', 'movies', 'books', 'music', 'personalfinance', 'investing', 'wallstreetbets', 'stocks', 'crypto', 'askreddit', 'explainlikeimfive', 'todayilearned', 'nostupidquestions', 'apple', 'android', 'gadgets', 'programming', 'webdev', 'lifeprotips', 'unpopularopinion', 'philosophy'];
 
     // --- DOM Elements ---
-    const modeButtons = { single: document.getElementById('singleModeBtn'), compare: document.getElementById('compareModeBtn'), track: document.getElementById('trackModeBtn') };
-    const inputContainers = { single: document.getElementById('singleInputContainer'), compare: document.getElementById('compareInputContainer'), track: document.getElementById('trackInputContainer') };
+    const modeButtons = { single: document.getElementById('singleModeBtn'), compare: document.getElementById('compareModeBtn'), monitoring: document.getElementById('monitoringModeBtn'), discover: document.getElementById('discoverModeBtn') };
+    const inputContainers = { single: document.getElementById('singleInputContainer'), compare: document.getElementById('compareInputContainer'), monitoring: document.getElementById('monitoringInputContainer'), discover: document.getElementById('discoverInputContainer') };
+    const allActionButtons = { analyze: document.getElementById('analyzeBtn'), compare: document.getElementById('compareBtn'), createTracker: document.getElementById('createTrackerBtn'), discover: document.getElementById('discoverBtn') };
     const subredditInput = document.getElementById('subredditInput');
     const compareInput = document.getElementById('compareInput');
     const trackKeywordInput = document.getElementById('trackKeywordInput');
     const trackSubredditsInput = document.getElementById('trackSubredditsInput');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const compareBtn = document.getElementById('compareBtn');
-    const createTrackerBtn = document.getElementById('createTrackerBtn');
+    const discoverInput = document.getElementById('discoverInput');
     const loader = document.getElementById('loader');
     const loaderText = document.getElementById('loaderText');
     const errorContainer = document.getElementById('error');
     const errorMessage = document.getElementById('errorMessage');
     const resultsArea = document.getElementById('resultsArea');
-    const commentModal = document.getElementById('commentModal');
+    const universalModal = document.getElementById('universalModal');
+    const modalTitle = document.getElementById('modalTitle');
     const modalContent = document.getElementById('modalContent');
     const modalLoader = document.getElementById('modalLoader');
+    const modalLoaderText = document.getElementById('modalLoaderText');
     const closeModalBtn = document.getElementById('closeModalBtn');
 
     // --- Event Listeners ---
     Object.keys(modeButtons).forEach(mode => modeButtons[mode].addEventListener('click', () => setMode(mode)));
-    analyzeBtn.addEventListener('click', handleSingleAnalysis);
-    compareBtn.addEventListener('click', handleComparisonAnalysis);
-    createTrackerBtn.addEventListener('click', handleCreateTracker);
+    Object.values(allActionButtons).forEach(btn => btn.addEventListener('click', handleButtonClick));
     subredditInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleSingleAnalysis(); });
     compareInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleComparisonAnalysis(); });
-    closeModalBtn.addEventListener('click', () => commentModal.classList.add('hidden'));
-    commentModal.addEventListener('click', (e) => { if (e.target === commentModal) commentModal.classList.add('hidden'); });
+    discoverInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleDiscoveryAnalysis(); });
+    closeModalBtn.addEventListener('click', () => universalModal.classList.add('hidden'));
+    universalModal.addEventListener('click', (e) => { if (e.target === universalModal) universalModal.classList.add('hidden'); });
+
+    // --- State Management ---
+    function setAnalyzingState(isBusy) { isAnalyzing = isBusy; Object.values(allActionButtons).forEach(btn => btn.disabled = isBusy); document.querySelectorAll('.tracker-update-btn, .tracker-delete-btn, #generateSummaryBtn, .discover-analyze-btn, #exportReportBtn').forEach(btn => btn.disabled = isBusy); }
 
     // --- Mode Switching ---
-    function setMode(newMode) {
-        activeMode = newMode;
-        Object.keys(modeButtons).forEach(mode => {
-            modeButtons[mode].classList.toggle('mode-btn-active', mode === newMode);
-            modeButtons[mode].classList.toggle('mode-btn-inactive', mode !== newMode);
-            inputContainers[mode].classList.toggle('hidden', mode !== newMode);
-        });
-        resultsArea.innerHTML = '';
-        hideError();
-        if (newMode === 'track') {
-            displayTrackersDashboard();
+    function setMode(newMode) { if (isAnalyzing) return; activeMode = newMode; Object.keys(modeButtons).forEach(mode => { modeButtons[mode].classList.toggle('mode-btn-active', mode === newMode); modeButtons[mode].classList.toggle('mode-btn-inactive', mode !== newMode); inputContainers[mode].classList.toggle('hidden', mode !== newMode); }); resultsArea.innerHTML = ''; hideError(); if (newMode === 'monitoring') { displayTrackersDashboard(); } }
+    
+    // --- Universal Button Handler ---
+    function handleButtonClick(e) {
+        switch(e.target.id) {
+            case 'analyzeBtn': handleSingleAnalysis(); break;
+            case 'compareBtn': handleComparisonAnalysis(); break;
+            case 'createTrackerBtn': handleCreateTracker(); break;
+            case 'discoverBtn': handleDiscoveryAnalysis(); break;
         }
     }
 
-    // --- Analysis Kick-off ---
-    async function handleSingleAnalysis() {
-        const subreddit = subredditInput.value.trim();
-        if (!subreddit) { showError('Please enter a subreddit name.'); return; }
-        hideAllResults();
-        setLoading(true, `Analyzing r/${subreddit}...`);
-        try {
-            const result = await performAnalysis(subreddit);
-            displaySingleResult(result);
-        } catch (err) { showError(err.message); } finally { setLoading(false); }
-    }
+    // --- Input Sanitization ---
+    function sanitize(inputStr) { return inputStr.trim().replace(/[^a-zA-Z0-9_]/g, ''); }
+    function sanitizeTopic(inputStr) { return inputStr.trim(); }
 
-    async function handleComparisonAnalysis() {
-        const subreddits = compareInput.value.split(',').map(s => s.trim()).filter(s => s);
-        if (subreddits.length < 2 || subreddits.length > 4) { showError('Please enter 2-4 subreddits, separated by commas.'); return; }
-        hideAllResults();
-        setLoading(true, `Comparing ${subreddits.length} subreddits...`);
-        try {
-            const promises = subreddits.map(sub => performAnalysis(sub));
-            const results = await Promise.all(promises);
-            displayComparisonResults(results);
-        } catch (err) { showError(err.message); } finally { setLoading(false); }
-    }
+    // --- Analysis Kick-off ---
+    async function handleSingleAnalysis() { if (isAnalyzing) return; const subreddit = sanitize(subredditInput.value); if (!subreddit) { showError('Please enter a valid subreddit name.'); return; } hideAllResults(); setLoading(true, `Performing advanced analysis on r/${subreddit}...`); setAnalyzingState(true); try { const result = await performAnalysis(subreddit); currentAnalysisResult = result; displaySingleResult(result); } catch (err) { showError(err.message); } finally { setLoading(false); setAnalyzingState(false); } }
+    async function handleComparisonAnalysis() { if (isAnalyzing) return; const subreddits = [...new Set(compareInput.value.split(',').map(sanitize).filter(s => s))]; if (subreddits.length < 2 || subreddits.length > 4) { showError('Please enter 2-4 unique, valid subreddit names.'); return; } hideAllResults(); setLoading(true, `Comparing ${subreddits.length} subreddits...`); setAnalyzingState(true); try { const results = await Promise.allSettled(subreddits.map(sub => performAnalysis(sub))); displayComparisonResults(results); } catch (err) { showError(err.message); } finally { setLoading(false); setAnalyzingState(false); } }
+    async function handleDiscoveryAnalysis() { if (isAnalyzing) return; const topic = sanitizeTopic(discoverInput.value); if (!topic) { showError('Please enter a topic to discover.'); return; } hideAllResults(); setLoading(true, `Discovering conversations about "${topic}"...`); setAnalyzingState(true); try { const results = await Promise.allSettled(DISCOVERY_SUBREDDITS.map(sub => performAnalysis(sub, topic))); const relevantResults = results.filter(r => r.status === 'fulfilled' && !r.value.error && r.value.keywordMentions > 0).map(r => r.value); displayDiscoveryResults(topic, relevantResults); } catch (err) { showError(err.message); } finally { setLoading(false); setAnalyzingState(false); } }
 
     // --- Core Analysis Logic ---
     async function performAnalysis(subreddit, keyword = null) {
-        try {
-            const url = `https://www.reddit.com/r/${subreddit}/hot.json?limit=50`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`r/${subreddit} not found or API error.`);
-            const data = await response.json();
-            const posts = data.data.children;
-            if (!posts || posts.length === 0) return { subreddit, error: `No posts found in r/${subreddit}.` };
-
-            let allText = '';
-            let keywordMentions = 0;
-            const postData = posts.map(post => {
-                const { title, selftext, author, score, permalink, num_comments, id } = post.data;
-                const postText = ` ${title} ${selftext || ''} `;
-                allText += postText;
-                if (keyword && postText.toLowerCase().includes(keyword.toLowerCase())) {
-                    keywordMentions++;
-                }
-                // FIX: Ensure selftext is returned for other functions to use
-                return { id, title, selftext, author, score, url: `https://reddit.com${permalink}`, permalink, num_comments };
-            });
-
-            const entities = recognizeEntities(allText);
-            const sentiment = analyzeSentiment(allText);
-            
-            return { subreddit, entities, sentiment, postData, keywordMentions };
-        } catch (e) {
-            return { subreddit, error: e.message };
+        const url = keyword 
+            ? `https://www.reddit.com/r/${subreddit}/search.json?q=${encodeURIComponent(keyword)}&restrict_sr=on&sort=hot&limit=25`
+            : `https://www.reddit.com/r/${subreddit}/hot.json?limit=50`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            let errorMsg = `API error for r/${subreddit} (Status: ${response.status}).`;
+            if (response.status === 404 || response.status === 403) errorMsg = `Cannot access r/${subreddit}. It may be private or banned.`;
+            if (response.status === 429) errorMsg = `Too many requests for r/${subreddit}. Please wait a moment.`;
+            if (response.status >= 500) errorMsg = `Reddit servers are having issues for r/${subreddit}. Please try again later.`;
+            throw new Error(errorMsg);
         }
-    }
-
-    async function handleDeepDive(permalink, postTitle) {
-        commentModal.classList.remove('hidden');
-        modalContent.innerHTML = '';
-        modalLoader.classList.remove('hidden');
-        modalLoader.classList.add('flex');
-        try {
-            const url = `https://www.reddit.com${permalink}.json`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Failed to fetch comments.');
-            const data = await response.json();
-            
-            const comments = [];
-            function extractComments(listing) {
-                if (!listing?.data?.children) return;
-                listing.data.children.forEach(c => {
-                    if (c.kind === 't1' && c.data.body) {
-                        comments.push({ text: c.data.body, author: c.data.author, score: c.data.score, replies: c.data.replies?.data?.children?.length || 0 });
-                        if (c.data.replies) extractComments(c.data.replies);
-                    }
-                });
-            }
-            extractComments(data[1]);
-
-            if (comments.length === 0) {
-                modalContent.innerHTML = `<p class="text-gray-400">No comments found for this post.</p>`;
-            } else {
-                const allCommentsText = comments.map(c => c.text).join(' ');
-                const commentEntities = recognizeEntities(allCommentsText);
-                const contextualSentiment = analyzeContextualSentiment(comments);
-                const influentialUsers = findInfluentialUsers(comments);
-                displayModalContent(postTitle, commentEntities, contextualSentiment, influentialUsers);
-            }
-        } catch (err) {
-            modalContent.innerHTML = `<p class="text-red-400">${err.message}</p>`;
-        } finally {
-            modalLoader.classList.add('hidden');
-            modalLoader.classList.remove('flex');
+        const data = await response.json();
+        const posts = data.data.children;
+        if (!posts || posts.length === 0) {
+            const result = { subreddit, keywordMentions: 0 };
+            if(!keyword) result.error = `No posts found in r/${subreddit}.`;
+            return result;
         }
-    }
 
-    // --- Analysis Functions (Level 1 & Deep Dive) ---
-    function recognizeEntities(text) {
-        const entities = { STOCK: {}, COMPANY: {} };
-        let match;
-        while ((match = ENTITY_REGEX.TICKER.exec(text)) !== null) {
-            const entity = match[1].toUpperCase();
-            entities.STOCK[entity] = (entities.STOCK[entity] || 0) + 1;
-        }
-        while ((match = ENTITY_REGEX.STOCK.exec(text)) !== null) {
-             const entity = match[1].toUpperCase();
-             if(KNOWN_COMPANIES.map(c => c.toUpperCase()).includes(entity) || entity.length > 1 && entity.length <= 5) {
-                entities.STOCK[entity] = (entities.STOCK[entity] || 0) + 1;
-             }
-        }
-        KNOWN_COMPANIES.forEach(company => {
-            const companyRegex = new RegExp(`\\b${company}\\b`, 'gi');
-            const count = (text.match(companyRegex) || []).length;
-            if (count > 0) entities.COMPANY[company] = (entities.COMPANY[company] || 0) + count;
-        });
-        return entities;
-    }
-
-    function analyzeSentiment(text) {
-        if (!text || typeof text !== 'string') return { positive: 0, negative: 0, neutral: 100 };
-        const positiveWords = ['love', 'awesome', 'great', 'amazing', 'good', 'excellent', 'bullish', 'diamond', 'hands', 'hodl', 'buy', 'up', 'rocket', 'moon'];
-        const negativeWords = ['hate', 'bad', 'terrible', 'awful', 'problem', 'issue', 'bearish', 'paper', 'sell', 'down', 'short', 'fud'];
-        let posCount = 0, negCount = 0;
-        const words = text.toLowerCase().split(/\s+/);
-        words.forEach(word => {
-            if (positiveWords.includes(word)) posCount++;
-            if (negativeWords.includes(word)) negCount++;
-        });
-        const total = posCount + negCount;
-        if (total === 0) return { positive: 0, negative: 0, neutral: 100 };
-        const positive = Math.round((posCount / total) * 100);
-        const negative = Math.round((negCount / total) * 100);
-        return { positive, negative, neutral: 100 - positive - negative };
-    }
-    
-    function getSentimentScore(text) {
-        if (!text || typeof text !== 'string') return 0;
-        const positiveWords = ['love', 'awesome', 'great', 'amazing', 'good', 'excellent', 'bullish', 'diamond', 'hands', 'hodl', 'buy', 'up', 'rocket', 'moon'];
-        const negativeWords = ['hate', 'bad', 'terrible', 'awful', 'problem', 'issue', 'bearish', 'paper', 'sell', 'down', 'short', 'fud'];
-        let score = 0;
-        const words = text.toLowerCase().split(/\s+/);
-        words.forEach(word => {
-            if (positiveWords.includes(word)) score++;
-            if (negativeWords.includes(word)) score--;
-        });
-        return score;
-    }
-
-    function analyzeContextualSentiment(comments) {
-        let mostPositive = { score: -Infinity, comment: null };
-        let mostNegative = { score: Infinity, comment: null };
-        if (comments.length === 0) return { mostPositive: null, mostNegative: null };
-        comments.forEach(comment => {
-            const sentimentScore = getSentimentScore(comment.text);
-            if (sentimentScore > mostPositive.score) mostPositive = { score: sentimentScore, comment };
-            if (sentimentScore < mostNegative.score) mostNegative = { score: sentimentScore, comment };
-        });
-        return { mostPositive: mostPositive.comment, mostNegative: mostNegative.comment };
-    }
-
-    function findInfluentialUsers(comments) {
-        const users = {};
-        comments.forEach(c => {
-            if (c.author && c.author !== '[deleted]') {
-                if (!users[c.author]) users[c.author] = { postCount: 0, totalScore: 0, totalReplies: 0 };
-                users[c.author].postCount++;
-                users[c.author].totalScore += c.score;
-                users[c.author].totalReplies += c.replies;
+        let allText = '';
+        let keywordMentions = 0;
+        let totalComments = 0;
+        const postData = posts.map(post => {
+            const { title, selftext, author, score, permalink, num_comments, id, created_utc } = post.data;
+            const postText = ` ${title} ${selftext || ''} `;
+            allText += postText;
+            if (keyword && postText.toLowerCase().includes(keyword.toLowerCase())) {
+                keywordMentions++;
+                totalComments += num_comments;
             }
+            return { id, title, selftext, author, score, url: `https://reddit.com${permalink}`, permalink, num_comments, created_utc };
         });
-        return Object.entries(users).map(([author, data]) => {
-            const influenceScore = (data.totalScore * 0.5) + (data.postCount * 0.2) + (data.totalReplies * 0.3);
-            return { author, ...data, influenceScore };
-        }).sort((a, b) => b.influenceScore - a.influenceScore).slice(0, 10);
+
+        const emotions = analyzeEmotions(allText);
+        const themes = identifyDiscussionThemes(allText);
+        const cohorts = analyzeUserCohorts(postData);
+        const intensity = keywordMentions > 0 ? totalComments / keywordMentions : 0;
+        
+        return { subreddit, emotions, themes, cohorts, postData, keywordMentions, intensity, rawText: allText };
     }
 
-    // --- Tracking Logic ---
-    function getTrackers() { return JSON.parse(localStorage.getItem('redditTrackers') || '{}'); }
-    function saveTrackers(trackers) { localStorage.setItem('redditTrackers', JSON.stringify(trackers)); }
+    // --- Advanced Analysis Functions ---
+    function analyzeEmotions(text) { if (!text || typeof text !== 'string') return { joy: 0, anger: 0, sadness: 0, fear: 0 }; const emotionCounts = { joy: 0, anger: 0, sadness: 0, fear: 0 }; const words = text.toLowerCase().split(/\s+/); words.forEach(word => { for (const emotion in EMOTION_LEXICON) { if (EMOTION_LEXICON[emotion].has(word)) { emotionCounts[emotion]++; } } }); const totalEmotions = Object.values(emotionCounts).reduce((sum, count) => sum + count, 0); if (totalEmotions === 0) return { joy: 0, anger: 0, sadness: 0, fear: 0 }; const emotionPercentages = {}; for (const emotion in emotionCounts) { emotionPercentages[emotion] = Math.round((emotionCounts[emotion] / totalEmotions) * 100); } return emotionPercentages; }
+    function identifyDiscussionThemes(text) { const sentences = text.toLowerCase().split(/[.!?]/); const hotTopics = {}; const painPoints = {}; const positiveWords = EMOTION_LEXICON.joy; const negativeWords = new Set([...EMOTION_LEXICON.anger, ...EMOTION_LEXICON.sadness, ...EMOTION_LEXICON.fear]); sentences.forEach(sentence => { const words = sentence.split(/\s+/); words.forEach((word, index) => { const contextWords = words.slice(Math.max(0, index - 3), Math.min(words.length, index + 4)); const nouns = contextWords.filter(w => w.length > 3 && !STOP_WORDS.has(w) && isNaN(w)); if (positiveWords.has(word) && nouns.length > 0) { nouns.forEach(noun => { hotTopics[noun] = (hotTopics[noun] || 0) + 1; }); } else if (negativeWords.has(word) && nouns.length > 0) { nouns.forEach(noun => { painPoints[noun] = (painPoints[noun] || 0) + 1; }); } }); }); const sortAndFilter = (obj) => Object.entries(obj).filter(([key, value]) => !Object.values(EMOTION_LEXICON).some(set => set.has(key))).sort((a, b) => b[1] - a[1]).slice(0, 5).map(item => item[0]); return { hot: sortAndFilter(hotTopics), pain: sortAndFilter(painPoints) }; }
+    function analyzeUserCohorts(postData) { const users = {}; postData.forEach(p => { if (p.author && p.author !== '[deleted]') { if (!users[p.author]) users[p.author] = { postCount: 0, totalScore: 0, firstPost: p.created_utc }; users[p.author].postCount++; users[p.author].totalScore += p.score; if (p.created_utc < users[p.author].firstPost) { users[p.author].firstPost = p.created_utc; } } }); const userArray = Object.entries(users); const twoWeeksAgo = (Date.now() / 1000) - (14 * 24 * 60 * 60); const powerPosters = userArray.sort((a, b) => b[1].postCount - a[1].postCount).slice(0, 3).map(u => u[0]); const karmaKings = userArray.sort((a, b) => b[1].totalScore - a[1].totalScore).slice(0, 3).map(u => u[0]); const newVoices = userArray.filter(u => u[1].firstPost > twoWeeksAgo).slice(0, 3).map(u => u[0]); return { powerPosters, karmaKings, newVoices }; }
 
-    function handleCreateTracker() {
-        const keyword = trackKeywordInput.value.trim();
-        const subreddits = trackSubredditsInput.value.split(',').map(s => s.trim()).filter(s => s);
-        if (!keyword || subreddits.length === 0) { showError("Please provide a keyword and at least one subreddit."); return; }
-        const trackers = getTrackers();
-        const trackerId = `tracker_${Date.now()}`;
-        trackers[trackerId] = { id: trackerId, keyword, subreddits, data: [] };
-        saveTrackers(trackers);
-        trackKeywordInput.value = '';
-        trackSubredditsInput.value = '';
-        displayTrackersDashboard();
-    }
-
-    async function handleUpdateTracker(trackerId) {
-        const trackers = getTrackers();
-        const tracker = trackers[trackerId];
-        if (!tracker) return;
-        setLoading(true, `Updating tracker for "${tracker.keyword}"...`);
-        try {
-            let totalMentions = 0;
-            let combinedTextForSentiment = '';
-            for (const sub of tracker.subreddits) {
-                const result = await performAnalysis(sub, tracker.keyword);
-                if (!result.error) {
-                    totalMentions += result.keywordMentions;
-                    // FIX: Accurately collect text for sentiment from posts that mention the keyword
-                    const relevantPosts = result.postData.filter(p => {
-                        const postText = `${p.title} ${p.selftext || ''}`;
-                        return postText.toLowerCase().includes(tracker.keyword.toLowerCase());
-                    });
-                    combinedTextForSentiment += relevantPosts.map(p => `${p.title} ${p.selftext || ''}`).join(' ');
-                }
-            }
-            const sentiment = analyzeSentiment(combinedTextForSentiment);
-            const today = new Date().toISOString().split('T')[0];
+    // --- Tracking & Anomaly Detection Logic ---
+    function getTrackers() { return JSON.parse(localStorage.getItem('redditTrackers_v3') || '{}'); }
+    function saveTrackers(trackers) { localStorage.setItem('redditTrackers_v3', JSON.stringify(trackers)); }
+    function handleCreateTracker() { if (isAnalyzing) return; const keyword = sanitizeTopic(trackKeywordInput.value); const subreddits = [...new Set(trackSubredditsInput.value.split(',').map(sanitize).filter(s => s))]; if (!keyword || subreddits.length === 0) { showError("Please provide a valid keyword and at least one subreddit."); return; } const trackers = getTrackers(); const existing = Object.values(trackers).find(t => t.keyword.toLowerCase() === keyword.toLowerCase() && JSON.stringify(t.subreddits.sort()) === JSON.stringify(subreddits.sort())); if (existing) { showError(`A tracker for "${keyword}" in these subreddits already exists.`); return; } const trackerId = `tracker_${Date.now()}`; trackers[trackerId] = { id: trackerId, keyword, subreddits, data: [], lastUpdated: null, anomaly: null }; saveTrackers(trackers); trackKeywordInput.value = ''; trackSubredditsInput.value = ''; displayTrackersDashboard(); }
+    async function handleUpdateTracker(trackerId, btnElement) { if (isAnalyzing) return; const trackers = getTrackers(); const tracker = trackers[trackerId]; if (!tracker) return; 
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = `<div class="mini-loader mx-auto"></div>`;
+        btnElement.disabled = true;
+        setAnalyzingState(true);
+        try { let totalMentions = 0; let combinedTextForSentiment = ''; for (const sub of tracker.subreddits) { const result = await performAnalysis(sub, tracker.keyword); if (!result.error) { totalMentions += result.keywordMentions; const relevantPosts = result.postData.filter(p => { const postText = `${p.title} ${p.selftext || ''}`; return postText.toLowerCase().includes(tracker.keyword.toLowerCase()); }); combinedTextForSentiment += relevantPosts.map(p => `${p.title} ${p.selftext || ''}`).join(' '); } } const emotions = analyzeEmotions(combinedTextForSentiment); const today = new Date().toISOString().split('T')[0];
+            tracker.anomaly = detectAnomaly(tracker.data, totalMentions);
             const existingDataIndex = tracker.data.findIndex(d => d.date === today);
-            const newDataPoint = { date: today, mentions: totalMentions, sentiment: sentiment.positive - sentiment.negative };
-            if (existingDataIndex > -1) {
-                tracker.data[existingDataIndex] = newDataPoint;
-            } else {
-                tracker.data.push(newDataPoint);
-            }
+            const newDataPoint = { date: today, mentions: totalMentions, sentiment: emotions.joy - (emotions.anger + emotions.sadness + emotions.fear) };
+            if (existingDataIndex > -1) { tracker.data[existingDataIndex] = newDataPoint; } else { tracker.data.push(newDataPoint); }
             tracker.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+            tracker.lastUpdated = new Date().toISOString();
             saveTrackers(trackers);
             displayTrackersDashboard();
-        } catch (err) { showError(err.message); } finally { setLoading(false); }
+        } catch (err) { showError(err.message); } finally { setAnalyzingState(false); btnElement.innerHTML = originalText; } }
+    function handleDeleteTracker(trackerId) { if (isAnalyzing) return; if (confirm(`Are you sure you want to delete this tracker and all its historical data? This action cannot be undone.`)) { const trackers = getTrackers(); delete trackers[trackerId]; saveTrackers(trackers); displayTrackersDashboard(); } }
+    async function handleUpdateAllTrackers(btnElement) { if (isAnalyzing) return; const trackers = getTrackers(); const trackerIds = Object.keys(trackers); if (trackerIds.length === 0) return;
+        const originalText = btnElement.innerHTML;
+        btnElement.innerHTML = `<div class="mini-loader mr-2"></div> Updating All...`;
+        setAnalyzingState(true);
+        for (const id of trackerIds) {
+            const trackerCard = document.querySelector(`[data-tracker-id="${id}"]`);
+            const updateBtn = trackerCard.querySelector('.tracker-update-btn');
+            await handleUpdateTracker(id, updateBtn);
+        }
+        setAnalyzingState(false);
+        btnElement.innerHTML = originalText;
     }
-    
-    function handleDeleteTracker(trackerId) {
-        const trackers = getTrackers();
-        delete trackers[trackerId];
-        saveTrackers(trackers);
-        displayTrackersDashboard();
-    }
+    function detectAnomaly(historicalData, newMentions) { if (historicalData.length < 3) return null; const mentions = historicalData.map(d => d.mentions); const sum = mentions.reduce((a, b) => a + b, 0); const avg = sum / mentions.length; const stdDev = Math.sqrt(mentions.map(x => Math.pow(x - avg, 2)).reduce((a, b) => a + b) / mentions.length); if (newMentions > avg + (2 * stdDev) && newMentions > 10) { return { type: 'spike', value: newMentions, avg: avg.toFixed(1) }; } return null; }
 
     // --- AI Summary Logic ---
-    async function handleGenerateSummary(result) {
-        const summaryContainer = document.getElementById('aiSummaryContainer');
-        const summaryLoader = summaryContainer.querySelector('.loader');
-        const summaryContent = summaryContainer.querySelector('.content');
-        summaryLoader.classList.remove('hidden');
-        summaryContent.innerHTML = '';
-        const prompt = `You are a market analyst. Based on the following data from the subreddit 'r/${result.subreddit}', provide a concise, insightful executive summary in 2-3 sentences of the current sentiment and key discussion points.
-        Data: - Top Entities: ${JSON.stringify(result.entities)} - Overall Sentiment: Positive ${result.sentiment.positive}%, Negative ${result.sentiment.negative}%, Neutral ${result.sentiment.neutral}% - Top Post Titles: ${result.postData.slice(0, 3).map(p => `"${p.title}"`).join(', ')}
-        Synthesize this into a professional, easy-to-understand narrative.`;
-        try {
-            const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-            const payload = { contents: chatHistory };
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const data = await response.json();
-            if (data.candidates && data.candidates.length > 0) {
-                summaryContent.innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
-            } else { throw new Error("AI response was empty."); }
-        } catch (err) {
-            summaryContent.innerHTML = `<p class="text-red-400">Failed to generate AI summary. ${err.message}</p>`;
-        } finally { summaryLoader.classList.add('hidden'); }
-    }
+    async function handleGenerateSummary(result) { if (isAnalyzing) return; const summaryContainer = document.getElementById('aiSummaryContainer'); const summaryLoader = summaryContainer.querySelector('.loader'); const summaryContent = summaryContainer.querySelector('.content'); const generateBtn = document.getElementById('generateSummaryBtn'); setAnalyzingState(true); generateBtn.disabled = true; summaryLoader.classList.remove('hidden'); summaryContent.innerHTML = ''; const prompt = `You are a market analyst. Based on the following data from r/${result.subreddit}, provide a concise, insightful executive summary in 2-3 sentences. Focus on the primary emotions, the topics driving them, and the community structure.
+        Data: - Emotional Profile (%): Joy ${result.emotions.joy}, Anger ${result.emotions.anger}, Sadness ${result.emotions.sadness}, Fear ${result.emotions.fear} - Key Positive Topics: ${result.themes.hot.join(', ') || 'N/A'} - Key Negative Topics (Pain Points): ${result.themes.pain.join(', ') || 'N/A'} - Community Structure: Dominated by power posters like ${result.cohorts.powerPosters[0] || 'N/A'}.
+        Synthesize this into a professional, easy-to-understand narrative.`; try { const chatHistory = [{ role: "user", parts: [{ text: prompt }] }]; const payload = { contents: chatHistory }; const apiKey = ""; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`; const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const data = await response.json(); if (data.candidates && data.candidates.length > 0) { summaryContent.innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>'); } else { throw new Error("AI response was empty or malformed."); } } catch (err) { summaryContent.innerHTML = `<p class="text-red-400">Failed to generate AI summary. The API may be unavailable.</p>`; } finally { summaryLoader.classList.add('hidden'); setAnalyzingState(false); generateBtn.disabled = false; } }
 
     // --- Display Functions ---
-    function displaySingleResult(result) {
-        if (result.error) { showError(result.error); return; }
-        resultsArea.innerHTML = `<div id="singleResultsContainer"><h2 class="text-3xl font-bold mb-8 text-center text-white">Intelligence Report: r/${result.subreddit}</h2><div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 mb-8"><div class="flex justify-between items-center mb-4"><h3 class="text-xl font-semibold text-white">AI Executive Summary</h3><button id="generateSummaryBtn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm">Generate Summary</button></div><div id="aiSummaryContainer"><div class="loader hidden"></div><div class="content text-gray-300">Click the button to generate an AI-powered summary.</div></div></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><div class="lg:col-span-1 space-y-8"><div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700"><h3 class="text-xl font-semibold mb-4 text-white">Recognized Entities</h3><div id="entityContainer" class="space-y-3"></div></div><div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700"><h3 class="text-xl font-semibold mb-4 text-white">Overall Sentiment</h3><div class="chart-container"><canvas id="sentimentChart"></canvas></div></div></div><div class="lg:col-span-2"><div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700"><h3 class="text-xl font-semibold mb-4 text-white">Hot Posts Analysis</h3><div id="postsContainer" class="space-y-4 max-h-[800px] overflow-y-auto pr-2"></div></div></div></div></div>`;
-        document.getElementById('generateSummaryBtn').addEventListener('click', () => handleGenerateSummary(result));
-        displayEntities(document.getElementById('entityContainer'), result.entities);
-        createOrUpdateChart('sentimentChart', result.sentiment);
-        displayPosts(document.getElementById('postsContainer'), result.postData);
-    }
-    
-    function displayComparisonResults(results) {
-        let content = `<h2 class="text-3xl font-bold mb-8 text-center text-white">Comparison Report</h2><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">`;
-        results.forEach((result, index) => {
-            const chartId = `compareChart-${index}`;
-            if (result.error) {
-                content += `<div class="bg-gray-800 p-6 rounded-xl border border-gray-700"><h3 class="text-2xl font-bold text-center text-white">r/${result.subreddit}</h3><div class="text-center text-red-400 p-4 bg-red-900/50 rounded-lg mt-4">${result.error}</div></div>`;
-            } else {
-                content += `<div class="bg-gray-800 p-6 rounded-xl border border-gray-700 flex flex-col gap-6"><div><h3 class="text-2xl font-bold text-center text-white hover:text-indigo-400 transition"><a href="https://reddit.com/r/${result.subreddit}" target="_blank">r/${result.subreddit}</a></h3></div><div class="bg-gray-900 p-4 rounded-lg"><h4 class="text-lg font-semibold mb-3 text-indigo-300">Sentiment</h4><div class="comparison-chart-container"><canvas id="${chartId}"></canvas></div></div><div class="bg-gray-900 p-4 rounded-lg flex-grow"><h4 class="text-lg font-semibold mb-3 text-indigo-300">Top Entities</h4><div class="entity-container-compare space-y-2"></div></div></div>`;
+    function displaySingleResult(result) { if (result.error) { showError(result.error); return; } resultsArea.innerHTML = `<div id="singleResultsContainer"> <div class="sticky top-0 bg-gray-900/80 backdrop-blur-sm z-10 py-4 mb-4"> <div class="flex justify-between items-center"> <h2 class="text-3xl font-bold text-white print-text-header">Intelligence Report: r/${result.subreddit}</h2> <button id="exportReportBtn" onclick="window.print()" class="no-print bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700">Export Report</button> </div> </div> <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 mb-8 print-card"><div class="flex justify-between items-center mb-4"><h3 class="text-xl font-semibold text-white print-text-header">AI Executive Summary</h3><button id="generateSummaryBtn" class="no-print bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 text-sm">Generate Summary</button></div><div id="aiSummaryContainer"><div class="loader hidden"></div><div class="content text-gray-300 print-text-body">Click the button to generate an AI-powered summary of the emotional landscape.</div></div></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-8 print-grid"><div class="lg:col-span-1 space-y-8"><div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 print-card"><h3 class="text-xl font-semibold mb-4 text-white print-text-header">Emotional Profile</h3><div class="chart-container"><canvas id="emotionChart"></canvas></div></div><div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 print-card"><h3 class="text-xl font-semibold mb-4 text-white print-text-header">Discussion Themes</h3><div id="themesContainer" class="space-y-4"></div></div><div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 print-card"><h3 class="text-xl font-semibold mb-4 text-white print-text-header">Community Structure</h3><div id="cohortsContainer" class="space-y-4"></div></div></div><div class="lg:col-span-2"><div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 print-card"><h3 class="text-xl font-semibold mb-4 text-white print-text-header">Hot Posts Analysis</h3><div id="postsContainer" class="space-y-4 max-h-[800px] overflow-y-auto pr-2"></div></div></div></div></div>`; document.getElementById('generateSummaryBtn').addEventListener('click', () => handleGenerateSummary(result)); createOrUpdateEmotionChart('emotionChart', result.emotions); displayThemes(document.getElementById('themesContainer'), result.themes); displayCohorts(document.getElementById('cohortsContainer'), result.cohorts); displayPosts(document.getElementById('postsContainer'), result.postData); }
+    function displayComparisonResults(results) { let content = `<h2 class="text-3xl font-bold mb-8 text-center text-white">Comparison Report</h2><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">`; results.forEach((result, index) => { const chartId = `compareChart-${index}`; if (result.status === 'rejected' || result.value.error) { const subName = result.reason ? result.reason.message.match(/r\/[a-zA-Z0-9_]+/)?.[0] || 'Unknown' : `r/${result.value.subreddit}`; const errorMsg = result.reason ? result.reason.message : result.value.error; content += `<div class="bg-gray-800 p-6 rounded-xl border border-gray-700"><h3 class="text-2xl font-bold text-center text-white">${subName}</h3><div class="text-center text-red-400 p-4 bg-red-900/50 rounded-lg mt-4">${errorMsg}</div></div>`; } else { const res = result.value; content += `<div class="bg-gray-800 p-6 rounded-xl border border-gray-700 flex flex-col gap-6"><div><h3 class="text-2xl font-bold text-center text-white hover:text-indigo-400 transition"><a href="https://reddit.com/r/${res.subreddit}" target="_blank">r/${res.subreddit}</a></h3></div><div class="bg-gray-900 p-4 rounded-lg"><h4 class="text-lg font-semibold mb-3 text-indigo-300">Emotional Profile</h4><div class="discovery-chart-container"><canvas id="${chartId}"></canvas></div></div></div>`; } }); content += `</div>`; resultsArea.innerHTML = content; results.forEach((result, index) => { if (result.status === 'fulfilled' && !result.value.error) { const chartId = `compareChart-${index}`; createOrUpdateEmotionChart(chartId, result.value.emotions, true); } }); }
+    function displayTrackersDashboard() { const trackers = getTrackers(); let content = `<div class="flex justify-between items-center mb-8"><h2 class="text-3xl font-bold text-white">Monitoring Dashboard</h2><button id="updateAllBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center justify-center">Update All</button></div>`; if (Object.keys(trackers).length === 0) { content += `<p class="text-center text-gray-400">You haven't created any trackers yet. Use the form above to start monitoring a keyword.</p>`; } else { content += `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">`; for (const id in trackers) { const tracker = trackers[id]; const lastData = tracker.data[tracker.data.length - 1] || {mentions: 'N/A'}; const anomaly = tracker.anomaly; content += `<div class="bg-gray-800 p-6 rounded-xl border border-gray-700 flex flex-col" data-tracker-id="${id}"> <div class="flex-grow"> <div class="flex justify-between items-start"> <div> <h3 class="text-2xl font-semibold text-white">${tracker.keyword}</h3> <p class="text-sm text-indigo-400">${tracker.subreddits.join(', ')}</p> </div> ${anomaly ? `<div class="anomaly-pulse text-white font-bold text-sm py-1 px-3 rounded-full">ALERT</div>` : ''} </div> <div class="mt-4 text-center"> <span class="text-5xl font-bold">${lastData.mentions}</span> <p class="text-gray-400">Latest Mentions</p> </div> ${anomaly ? `<div class="mt-2 text-center text-red-400 text-sm">Spike detected! Previous average was ${anomaly.avg}.</div>` : ''} <p class="text-xs text-center text-gray-500 mt-4">Last updated: ${tracker.lastUpdated ? new Date(tracker.lastUpdated).toLocaleString() : 'Never'}</p> </div> <div class="mt-4 flex gap-2"> <button onclick="handleViewChart('${id}')" class="w-full bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 text-sm">View Chart</button> <button onclick="handleDeleteTracker('${id}')" class="tracker-delete-btn bg-red-800/50 text-red-300 font-semibold p-2 rounded-lg hover:bg-red-700 hover:text-white">&times;</button> </div> <button onclick="handleUpdateTracker('${id}', this)" class="tracker-update-btn w-full mt-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm flex items-center justify-center">Update</button> </div>`; } content += `</div>`; } resultsArea.innerHTML = content; const updateAllBtn = document.getElementById('updateAllBtn'); if(updateAllBtn) updateAllBtn.addEventListener('click', () => handleUpdateAllTrackers(updateAllBtn)); }
+    function displayDiscoveryResults(topic, results) { let content = `<div class="mb-6"><h2 class="text-3xl font-bold text-center text-white">Discovery Report for: "${topic}"</h2></div>`; if (results.length === 0) { content += `<p class="text-center text-gray-400">No significant conversations about this topic were found in the scanned subreddits.</p>`; } else { content += `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">`; results.sort((a,b) => b.keywordMentions - a.keywordMentions).forEach((result, index) => { const chartId = `discovery-chart-${index}`; content += `<div class="bg-gray-800 p-6 rounded-xl border border-gray-700 flex flex-col gap-4"> <div class="flex-grow"> <div class="flex justify-between items-start"> <h3 class="text-2xl font-bold text-white mb-2 hover:text-indigo-400"><a href="https://reddit.com/r/${result.subreddit}" target="_blank">r/${result.subreddit}</a></h3> <div class="text-right"><div class="font-bold text-2xl">${result.keywordMentions}</div><div class="text-sm text-gray-400">Mentions</div></div> </div> <p class="text-sm text-gray-400 mb-4 tooltip">Intensity: ${result.intensity.toFixed(2)} <span class="tooltiptext">"Conversation Intensity" is the average number of comments per post that mentions your topic. Higher means more passionate discussion.</span></p> <div class="discovery-chart-container"><canvas id="${chartId}"></canvas></div> <div class="mt-4"> <h4 class="font-semibold text-green-400 mb-1 text-sm">Hot Topics</h4> <div class="flex flex-wrap gap-2">${result.themes.hot.map(t => `<span class="topic-tag">${t}</span>`).join('') || '<span class="text-xs text-gray-500">N/A</span>'}</div> </div> <div class="mt-3"> <h4 class="font-semibold text-red-400 mb-1 text-sm">Pain Points</h4> <div class="flex flex-wrap gap-2">${result.themes.pain.map(t => `<span class="topic-tag">${t}</span>`).join('') || '<span class="text-xs text-gray-500">N/A</span>'}</div> </div> </div> <button onclick="quickAnalyze('${result.subreddit}')" class="discover-analyze-btn w-full mt-2 bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-800">Full Analysis</button> </div>`; }); content += `</div>`; } resultsArea.innerHTML = content; results.forEach((result, index) => { const chartId = `discovery-chart-${index}`; createOrUpdateEmotionChart(chartId, result.emotions, true); }); }
+    function quickAnalyze(subreddit) { setMode('single'); subredditInput.value = subreddit; handleSingleAnalysis(); }
+    function displayThemes(container, themes) { if (!container) return; let content = `<div><h4 class="font-semibold text-green-400 mb-2">Hot Topics</h4><div class="flex flex-wrap gap-2">`; if (themes.hot.length > 0) { themes.hot.forEach(topic => { content += `<button onclick="showThematicEvidence('${topic}', 'hot')" class="topic-tag">${topic}</button>`; }); } else { content += `<p class="text-sm text-gray-400">No distinct hot topics found.</p>`; } content += `</div></div><div><h4 class="font-semibold text-red-400 mb-2">Pain Points</h4><div class="flex flex-wrap gap-2">`; if (themes.pain.length > 0) { themes.pain.forEach(topic => { content += `<button onclick="showThematicEvidence('${topic}', 'pain')" class="topic-tag">${topic}</button>`; }); } else { content += `<p class="text-sm text-gray-400">No distinct pain points found.</p>`; } content += `</div></div>`; container.innerHTML = content; }
+    function showThematicEvidence(topic, type) {
+        if (!currentAnalysisResult || !currentAnalysisResult.rawText) return;
+        const sentences = currentAnalysisResult.rawText.toLowerCase().split(/[.!?]/);
+        const emotionWords = type === 'hot' ? EMOTION_LEXICON.joy : new Set([...EMOTION_LEXICON.anger, ...EMOTION_LEXICON.sadness, ...EMOTION_LEXICON.fear]);
+        
+        let evidence = [];
+        sentences.forEach(sentence => {
+            if (sentence.includes(topic)) {
+                const words = sentence.split(/\s+/);
+                const hasEmotionWord = words.some(word => emotionWords.has(word));
+                if (hasEmotionWord) {
+                    let highlightedSentence = sentence.replace(new RegExp(`\\b${topic}\\b`, 'gi'), `<strong class="text-indigo-400">${topic}</strong>`);
+                    emotionWords.forEach(eWord => {
+                        highlightedSentence = highlightedSentence.replace(new RegExp(`\\b${eWord}\\b`, 'gi'), `<strong class="text-pink-400">${eWord}</strong>`);
+                    });
+                    evidence.push({ sentence: highlightedSentence, score: getSentimentScore(sentence) });
+                }
             }
         });
-        content += `</div>`;
-        resultsArea.innerHTML = content;
-        results.forEach((result, index) => {
-            if (!result.error) {
-                const chartId = `compareChart-${index}`;
-                createOrUpdateChart(chartId, result.sentiment);
-                displayEntities(resultsArea.querySelectorAll('.entity-container-compare')[index], result.entities);
-            }
-        });
-    }
 
-    function displayTrackersDashboard() {
-        const trackers = getTrackers();
-        let content = `<h2 class="text-3xl font-bold mb-8 text-center text-white">Keyword Trackers</h2>`;
-        if (Object.keys(trackers).length === 0) {
-            content += `<p class="text-center text-gray-400">You haven't created any trackers yet. Use the form above to start monitoring a keyword.</p>`;
+        evidence.sort((a,b) => type === 'hot' ? b.score - a.score : a.score - b.score);
+
+        modalTitle.textContent = `Evidence for: "${topic}"`;
+        if (evidence.length > 0) {
+            modalContent.innerHTML = `<div class="space-y-4">${evidence.slice(0, 20).map(e => `<div class="bg-gray-900 p-3 rounded-lg border border-gray-700 text-gray-300">${e.sentence}</div>`).join('')}</div>`;
         } else {
-            content += `<div class="space-y-8">`;
-            for (const id in trackers) {
-                const tracker = trackers[id];
-                const chartId = `tracker-chart-${id}`;
-                content += `<div class="bg-gray-800 p-6 rounded-xl border border-gray-700"><div class="flex flex-wrap justify-between items-center gap-4 mb-4"><div><h3 class="text-2xl font-semibold text-white">${tracker.keyword}</h3><p class="text-sm text-indigo-400">${tracker.subreddits.join(', ')}</p></div><div class="flex gap-2"><button onclick="handleUpdateTracker('${id}')" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 text-sm">Update Data</button><button onclick="handleDeleteTracker('${id}')" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 text-sm">&times;</button></div></div><div class="tracking-chart-container"><canvas id="${chartId}"></canvas></div></div>`;
-            }
-            content += `</div>`;
+            modalContent.innerHTML = `<p class="text-gray-400">No direct sentences found linking this topic with strong emotion.</p>`;
         }
-        resultsArea.innerHTML = content;
-        for (const id in trackers) { createOrUpdateTrackerChart(`tracker-chart-${id}`, trackers[id]); }
+        modalLoader.classList.add('hidden');
+        universalModal.classList.remove('hidden');
     }
-
-    function displayEntities(container, entities) {
-        if (!container) return;
-        container.innerHTML = '';
-        const sortedStocks = Object.entries(entities.STOCK || {}).sort((a, b) => b[1] - a[1]);
-        const sortedCompanies = Object.entries(entities.COMPANY || {}).sort((a, b) => b[1] - a[1]);
-        if (sortedStocks.length === 0 && sortedCompanies.length === 0) { container.innerHTML = `<p class="text-gray-400 text-sm">No significant entities found.</p>`; return; }
-        if(sortedStocks.length > 0) {
-            container.innerHTML += `<h5 class="font-semibold text-indigo-400 mb-1 text-sm">Stocks & Tickers</h5>`;
-            sortedStocks.slice(0, 3).forEach(([e, c]) => { container.innerHTML += `<div class="flex justify-between items-center text-gray-300 text-sm"><span class="font-mono bg-gray-700 px-2 py-1 rounded-md text-xs">${e}</span><span>${c}</span></div>`; });
-        }
-        if(sortedCompanies.length > 0) {
-            container.innerHTML += `<h5 class="font-semibold text-indigo-400 mt-2 mb-1 text-sm">Companies</h5>`;
-            sortedCompanies.slice(0, 3).forEach(([e, c]) => { container.innerHTML += `<div class="flex justify-between items-center text-gray-300 text-sm"><span>${e}</span><span>${c}</span></div>`; });
-        }
-    }
-
-    function createOrUpdateChart(canvasId, sentiment) {
-        const ctx = document.getElementById(canvasId)?.getContext('2d');
-        if (!ctx) return;
-        if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
-        chartInstances[canvasId] = new Chart(ctx, { type: 'doughnut', data: { labels: ['Positive', 'Negative', 'Neutral'], datasets: [{ data: [sentiment.positive, sentiment.negative, sentiment.neutral], backgroundColor: ['#10B981', '#EF4444', '#6B7280'], borderColor: '#111827', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label}: ${c.raw}%` } } } } });
-    }
-
-    function createOrUpdateTrackerChart(canvasId, tracker) {
-        const ctx = document.getElementById(canvasId)?.getContext('2d');
-        if (!ctx) return;
-        if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
-        chartInstances[canvasId] = new Chart(ctx, { type: 'line', data: { datasets: [ { label: 'Mentions', data: tracker.data, parsing: { xAxisKey: 'date', yAxisKey: 'mentions' }, borderColor: '#4f46e5', backgroundColor: '#4f46e5', yAxisID: 'y' }, { label: 'Sentiment Score', data: tracker.data, parsing: { xAxisKey: 'date', yAxisKey: 'sentiment' }, borderColor: '#10B981', backgroundColor: '#10B981', yAxisID: 'y1' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: 'day' }, grid: { color: '#374151' }, ticks: { color: '#9ca3af' } }, y: { position: 'left', grid: { color: '#374151' }, ticks: { color: '#9ca3af' }, title: { display: true, text: 'Mentions', color: '#9ca3af' } }, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#9ca3af' }, title: { display: true, text: 'Sentiment Score', color: '#9ca3af' } } }, plugins: { legend: { labels: { color: '#d1d5db' } } } } });
-    }
-
-    function displayPosts(container, postData) {
-        if (!container) return;
-        container.innerHTML = '';
-        postData.forEach(post => {
-            const postCard = document.createElement('div');
-            postCard.className = "bg-gray-900 p-4 border border-gray-700 rounded-lg hover:border-indigo-500 transition-all";
-            postCard.innerHTML = `<a href="${post.url}" target="_blank" rel="noopener noreferrer" class="block mb-3"><h4 class="font-semibold text-gray-100 hover:text-indigo-400">${post.title}</h4></a><div class="flex items-center justify-between text-sm text-gray-400 mb-4"><span>by u/${post.author}</span><div class="flex items-center gap-4"><span>💬 ${post.num_comments.toLocaleString()}</span><span>⬆️ ${post.score.toLocaleString()}</span></div></div><button class="deep-dive-btn w-full bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-800">Deep Dive Analysis</button>`;
-            postCard.querySelector('.deep-dive-btn').addEventListener('click', () => handleDeepDive(post.permalink, post.title));
-            container.appendChild(postCard);
-        });
-    }
-    
-    function displayModalContent(postTitle, entities, sentiment, users) {
-        modalContent.innerHTML = `<div class="mb-6 pb-4 border-b border-gray-700"><h3 class="text-lg font-semibold text-gray-200">Post:</h3><p class="text-indigo-400 font-medium">${postTitle}</p></div><div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div class="space-y-8"><div><h4 class="text-xl font-semibold mb-4 text-white">Contextual Sentiment</h4><div class="space-y-4"><div><h5 class="font-semibold text-green-400 mb-1">Most Positive Comment</h5><div class="bg-gray-900 p-3 rounded-lg border border-green-700 text-sm text-gray-300 max-h-28 overflow-y-auto">${sentiment.mostPositive?.text?.replace(/</g, "&lt;") || 'N/A'}</div></div><div><h5 class="font-semibold text-red-400 mb-1">Most Negative Comment</h5><div class="bg-gray-900 p-3 rounded-lg border border-red-700 text-sm text-gray-300 max-h-28 overflow-y-auto">${sentiment.mostNegative?.text?.replace(/</g, "&lt;") || 'N/A'}</div></div></div></div><div><h4 class="text-xl font-semibold mb-4 text-white">Most Influential Users</h4><div class="space-y-3">${users.map(u => `<div class="flex justify-between items-center bg-gray-900 p-2 rounded-md"><span class="font-semibold text-indigo-400">u/${u.author}</span><span class="text-sm text-gray-400">Influence: ${u.influenceScore.toFixed(0)}</span></div>`).join('') || '<p class="text-gray-400 text-sm">No influential users found.</p>'}</div></div></div><div><h4 class="text-xl font-semibold mb-4 text-white">Entities in Comments</h4><div id="modalEntityContainer" class="space-y-3"></div></div></div>`;
-        displayEntities(document.getElementById('modalEntityContainer'), entities);
-    }
+    function displayCohorts(container, cohorts) { if (!container) return; let content = `<div><h4 class="font-semibold text-indigo-400 mb-2">Power Posters</h4><div class="flex flex-col gap-1 text-sm">`; if (cohorts.powerPosters.length > 0) { cohorts.powerPosters.forEach(u => { content += `<span>u/${u}</span>`; }); } else { content += `<p class="text-sm text-gray-400">N/A</p>`; } content += `</div></div><div class="mt-3"><h4 class="font-semibold text-indigo-400 mb-2">Karma Kings</h4><div class="flex flex-col gap-1 text-sm">`; if (cohorts.karmaKings.length > 0) { cohorts.karmaKings.forEach(u => { content += `<span>u/${u}</span>`; }); } else { content += `<p class="text-sm text-gray-400">N/A</p>`; } content += `</div></div><div class="mt-3"><h4 class="font-semibold text-indigo-400 mb-2">New Voices</h4><div class="flex flex-col gap-1 text-sm">`; if (cohorts.newVoices.length > 0) { cohorts.newVoices.forEach(u => { content += `<span>u/${u}</span>`; }); } else { content += `<p class="text-sm text-gray-400">N/A</p>`; } content += `</div></div>`; container.innerHTML = content; }
+    function createOrUpdateEmotionChart(canvasId, emotions, isCompare = false) { const ctx = document.getElementById(canvasId)?.getContext('2d'); if (!ctx) return; if (chartInstances[canvasId]) chartInstances[canvasId].destroy(); const data = { labels: ['Joy', 'Anger', 'Sadness', 'Fear'], datasets: [{ label: 'Emotional Score', data: [emotions.joy, emotions.anger, emotions.sadness, emotions.fear], backgroundColor: 'rgba(79, 70, 229, 0.2)', borderColor: 'rgba(79, 70, 229, 1)', pointBackgroundColor: 'rgba(79, 70, 229, 1)', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(79, 70, 229, 1)' }] }; chartInstances[canvasId] = new Chart(ctx, { type: 'radar', data: data, options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true, max: 100, grid: { color: '#374151' }, angleLines: { color: '#374151' }, pointLabels: { color: '#d1d5db', font: { size: isCompare ? 10 : 14 } }, ticks: { display: false } } }, plugins: { legend: { display: false } } } }); }
+    function createOrUpdateTrackerChart(canvasId, tracker) { const ctx = document.getElementById(canvasId)?.getContext('2d'); if (!ctx) return; if (chartInstances[canvasId]) chartInstances[canvasId].destroy(); chartInstances[canvasId] = new Chart(ctx, { type: 'line', data: { datasets: [ { label: 'Mentions', data: tracker.data, parsing: { xAxisKey: 'date', yAxisKey: 'mentions' }, borderColor: '#4f46e5', backgroundColor: '#4f46e5', yAxisID: 'y' }, { label: 'Sentiment Score', data: tracker.data, parsing: { xAxisKey: 'date', yAxisKey: 'sentiment' }, borderColor: '#10B981', backgroundColor: '#10B981', yAxisID: 'y1' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: 'day' }, grid: { color: '#374151' }, ticks: { color: '#9ca3af' } }, y: { position: 'left', grid: { color: '#374151' }, ticks: { color: '#9ca3af', beginAtZero: true }, title: { display: true, text: 'Mentions', color: '#9ca3af' } }, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#9ca3af' }, title: { display: true, text: 'Sentiment Score', color: '#9ca3af' } } }, plugins: { legend: { labels: { color: '#d1d5db' } } } } }); }
+    function displayPosts(container, postData) { if (!container) return; container.innerHTML = ''; postData.forEach(post => { const postCard = document.createElement('div'); postCard.className = "bg-gray-900 p-4 border border-gray-700 rounded-lg hover:border-indigo-500 transition-all print-post"; postCard.innerHTML = `<a href="${post.url}" target="_blank" rel="noopener noreferrer" class="block mb-3"><h4 class="font-semibold text-gray-100 hover:text-indigo-400 print-text-header">${post.title}</h4></a><div class="flex items-center justify-between text-sm text-gray-400 mb-4 print-text-faded"><span>by u/${post.author}</span><div class="flex items-center gap-4"><span>💬 ${post.num_comments.toLocaleString()}</span><span>⬆️ ${post.score.toLocaleString()}</span></div></div><button onclick="handleDeepDive('${post.permalink}', '${post.title.replace(/'/g, "\\'")}')" class="deep-dive-btn w-full bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-800 no-print">Deep Dive Analysis</button>`; container.appendChild(postCard); }); }
+    async function handleDeepDive(permalink, postTitle) { if (isAnalyzing) return; universalModal.classList.remove('hidden'); modalTitle.textContent = `Comment Deep Dive`; modalContent.innerHTML = ''; modalLoaderText.textContent = 'Analyzing comments...'; modalLoader.classList.remove('hidden'); try { const url = `https://www.reddit.com${permalink}.json`; const response = await fetch(url); if (!response.ok) throw new Error('Failed to fetch comments.'); const data = await response.json(); const comments = []; function extractComments(listing) { if (!listing?.data?.children) return; listing.data.children.forEach(c => { if (c.kind === 't1' && c.data.body) { comments.push({ text: c.data.body, author: c.data.author, score: c.data.score, replies: c.data.replies?.data?.children?.length || 0, created_utc: c.data.created_utc }); if (c.data.replies) extractComments(c.data.replies); } }); } extractComments(data[1]); if (comments.length === 0) { modalContent.innerHTML = `<p class="text-gray-400">No comments found for this post.</p>`; } else { const allCommentsText = comments.map(c => c.text).join(' '); const commentEmotions = analyzeEmotions(allCommentsText); const commenterCohorts = analyzeUserCohorts(comments); displayModalContent(postTitle, commentEmotions, commenterCohorts, comments); } } catch (err) { modalContent.innerHTML = `<p class="text-red-400">${err.message}</p>`; } finally { modalLoader.classList.add('hidden'); } }
+    function displayModalContent(postTitle, emotions, cohorts, comments) { const contextualSentiment = analyzeContextualSentiment(comments); modalContent.innerHTML = `<div class="mb-6 pb-4 border-b border-gray-700"><h3 class="text-lg font-semibold text-gray-200">Post:</h3><p class="text-indigo-400 font-medium">${postTitle}</p></div><div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div class="space-y-8"><div><h4 class="text-xl font-semibold mb-4 text-white">Emotional Profile</h4><div class="chart-container" style="height: 250px;"><canvas id="modalEmotionChart"></canvas></div></div><div><h4 class="text-xl font-semibold mb-4 text-white">Commenter Structure</h4><div id="modalCohortsContainer" class="space-y-4"></div></div></div><div><h4 class="text-xl font-semibold mb-4 text-white">Contextual Comments</h4><div class="space-y-4"><div><h5 class="font-semibold text-green-400 mb-1">Most Joyful Comment</h5><div class="bg-gray-900 p-3 rounded-lg border border-green-700 text-sm text-gray-300 max-h-28 overflow-y-auto">${contextualSentiment.mostPositive?.text?.replace(/</g, "&lt;") || 'N/A'}</div></div><div><h5 class="font-semibold text-red-400 mb-1">Most Angry/Fearful Comment</h5><div class="bg-gray-900 p-3 rounded-lg border border-red-700 text-sm text-gray-300 max-h-28 overflow-y-auto">${contextualSentiment.mostNegative?.text?.replace(/</g, "&lt;") || 'N/A'}</div></div></div></div></div>`; createOrUpdateEmotionChart('modalEmotionChart', emotions, true); displayCohorts(document.getElementById('modalCohortsContainer'), cohorts); }
+    function getSentimentScore(text) { if (!text || typeof text !== 'string') return 0; const positiveWords = EMOTION_LEXICON.joy; const negativeWords = new Set([...EMOTION_LEXICON.anger, ...EMOTION_LEXICON.fear, ...EMOTION_LEXICON.sadness]); let score = 0; const words = text.toLowerCase().split(/\s+/); words.forEach(word => { if (positiveWords.has(word)) score++; if (negativeWords.has(word)) score--; }); return score; }
+    function analyzeContextualSentiment(comments) { let mostPositive = { score: -Infinity, comment: null }; let mostNegative = { score: Infinity, comment: null }; if (comments.length === 0) return { mostPositive: null, mostNegative: null }; comments.forEach(comment => { const sentimentScore = getSentimentScore(comment.text); if (sentimentScore > mostPositive.score) mostPositive = { score: sentimentScore, comment }; if (sentimentScore < mostNegative.score) mostNegative = { score: sentimentScore, comment }; }); return { mostPositive: mostPositive.comment, mostNegative: mostNegative.comment }; }
+    function findInfluentialUsers(comments) { const users = {}; comments.forEach(c => { if (c.author && c.author !== '[deleted]') { if (!users[c.author]) users[c.author] = { postCount: 0, totalScore: 0, totalReplies: 0 }; users[c.author].postCount++; users[c.author].totalScore += c.score; users[c.author].totalReplies += c.replies; } }); return Object.entries(users).map(([author, data]) => { const influenceScore = (data.totalScore * 0.5) + (data.postCount * 0.2) + (data.totalReplies * 0.3); return { author, ...data, influenceScore }; }).sort((a, b) => b.influenceScore - a.influenceScore).slice(0, 10); }
 
     // --- UI Helpers ---
     function setLoading(isLoading, text = 'Performing deep analysis...') { loaderText.textContent = text; loader.classList.toggle('hidden', !isLoading); loader.classList.toggle('flex', isLoading); }
